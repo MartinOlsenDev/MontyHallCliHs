@@ -13,7 +13,11 @@ main = do
   hall <- hallMaker
   runGame hall
 
-data Hall = Hall (Maybe Selection) (Maybe Selection) Item Item Item
+data Hall = Hall (Maybe PlayerSelection) (Maybe RevealedSelection) Item Item Item
+
+type PlayerSelection = Selection
+
+type RevealedSelection = Selection
 
 newtype Selection = Selection Int
   deriving (Eq)
