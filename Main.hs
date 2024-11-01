@@ -44,11 +44,13 @@ instance Show Hall where
   show (Hall (Selection choice) a b c) =
     "You have selected door "
       ++ (show choice)
-      ++ "."
+      ++ ".\n"
       ++ "Door 0: "
       ++ (show a)
+      ++ "\n"
       ++ "Door 1: "
       ++ (show b)
+      ++ "\n"
       ++ "Door 2: "
       ++ (show c)
 
