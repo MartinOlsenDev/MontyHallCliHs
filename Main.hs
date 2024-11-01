@@ -33,8 +33,6 @@ instance Show Item where
           Car -> go "car"
           Goat -> go "goat"
 
-type Revealed = Bool
-
 hallMaker = undefined
 
 runGame = undefined
