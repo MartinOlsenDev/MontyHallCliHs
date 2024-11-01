@@ -10,14 +10,10 @@ import System.IO
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  game <- gameMaker
-  runGame game
+  hall <- hallMaker
+  runGame hall
 
-data Game = Game Phase Hall
-
-data Phase = Fresh | Ending
-
-data Hall = Hall Selection Door Door Door
+data Hall = Hall (Maybe Selection) (Maybe Selection) Item Item Item
 
 newtype Selection = Selection Int
   deriving (Eq)
@@ -28,36 +24,17 @@ makeSelection n
   | n <= 2 = Just $ Selection $ fromIntegral n
   | otherwise = Nothing
 
-data Door = Door Revealed Item
-
-instance Show Door where
-  show (Door revealed item) =
-    if revealed
-      then "This door contains a " ++ show item ++ "."
-      else "The contents of this door is unknown."
-
-type Revealed = Bool
-
 data Item = Car | Goat
 
 instance Show Item where
-  show Car = "car"
-  show Goat = "goat"
+  show x =
+    let go s = "This door contains a " ++ s ++ "."
+     in case x of
+          Car -> go "car"
+          Goat -> go "goat"
 
-instance Show Hall where
-  show (Hall (Selection choice) a b c) =
-    "You have selected door "
-      ++ (show choice)
-      ++ ".\n"
-      ++ "Door 0: "
-      ++ (show a)
-      ++ "\n"
-      ++ "Door 1: "
-      ++ (show b)
-      ++ "\n"
-      ++ "Door 2: "
-      ++ (show c)
+type Revealed = Bool
 
-gameMaker = undefined
+hallMaker = undefined
 
 runGame = undefined
