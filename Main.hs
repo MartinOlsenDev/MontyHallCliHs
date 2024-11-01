@@ -10,8 +10,12 @@ import System.IO
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  hall <- hallMaker
-  runGame hall
+  game <- gameMaker
+  runGame game
+
+data Game = Game Phase Hall
+
+data Phase = Fresh | Ending
 
 data Hall = Hall Selection Door Door Door
 
@@ -54,6 +58,6 @@ instance Show Hall where
       ++ "Door 2: "
       ++ (show c)
 
-hallMaker = undefined
+gameMaker = undefined
 
 runGame = undefined
