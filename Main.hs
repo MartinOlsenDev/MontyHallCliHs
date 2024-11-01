@@ -32,9 +32,9 @@ data Door = Door Revealed Item
 
 instance Show Door where
   show (Door revealed item) =
-    case revealed of
-      True -> "This door contains a " ++ (show item) ++ "."
-      False -> "The contents of this door is unknown."
+    if revealed
+      then "This door contains a " ++ show item ++ "."
+      else "The contents of this door is unknown."
 
 type Revealed = Bool
 
