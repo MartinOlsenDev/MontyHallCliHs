@@ -26,6 +26,32 @@ makeSelection n
 
 data Door = Door Revealed Item
 
+instance Show Door where
+  show (Door revealed item) =
+    case revealed of
+      True -> "This door contains a " ++ (show item) ++ "."
+      False -> "The contents of this door is unknown."
+
 type Revealed = Bool
 
 data Item = Car | Goat
+
+instance Show Item where
+  show Car = "car"
+  show Goat = "goat"
+
+instance Show Hall where
+  show (Hall (Selection choice) a b c) =
+    "You have selected door "
+      ++ (show choice)
+      ++ "."
+      ++ "Door 0: "
+      ++ (show a)
+      ++ "Door 1: "
+      ++ (show b)
+      ++ "Door 2: "
+      ++ (show c)
+
+hallMaker = undefined
+
+runGame = undefined
