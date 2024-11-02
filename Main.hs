@@ -25,7 +25,7 @@ data Phase2 doorId = Phase2 doorId Winning RevealedDoorNext
 data Phase3 doorId = Phase3 doorId Winning doorId
 
 newtype DoorId = DoorId Integer
-  deriving (Eq, Integral, Real, Ord, Num, Enum)
+  deriving (Show, Eq, Integral, Real, Ord, Num, Enum)
 
 type Winning = Bool
 
@@ -54,27 +54,30 @@ advance1 (Phase1 winDoor) choice = do
        in return $ Phase2 winDoor False isNext
 
 advance2 :: Integral a => Phase2 a -> Bool -> Phase3 a
-advance2 (Phase2 winDoor isWinning isNext) switched =
+advance2 hall@(Phase2 winDoor isWinning isNext) switched =
   let nowWinning = logicalXor isWinning switched
-      revealedDoor =
-        fromIntegral $
-          if isNext
-            then (winDoor + 1) `mod` 3
-            else (winDoor + 2) `mod` 3
-      prevLoc =
-        if isWinning
-          then winDoor
-          else fromJust $ newFinder [winDoor, revealedDoor] $ enumFromTo 0 2
+      prevLoc = selectedDoor hall
    in Phase3 winDoor nowWinning prevLoc
 
-data Item = Car | Goat
+revealedDoor :: Integral a => Phase2 a -> a
+revealedDoor (Phase2 winDoor isWinning isNext) =
+  fromIntegral $
+    if isNext
+      then (winDoor + 1) `mod` 3
+      else (winDoor + 2) `mod` 3
 
-instance Show Item where
-  show x =
-    let go s = "This door contains a " ++ s ++ "."
-     in case x of
-          Car -> go "car"
-          Goat -> go "goat"
+selectedDoor :: Integral a => Phase2 a -> a
+selectedDoor hall@(Phase2 winDoor isWinning isNext) =
+  if isWinning
+    then winDoor
+    else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
+
+instance Show (Phase1 a) where
+  show _ = "The hall has 3 closed doors."
+
+instance (Integral a, Show a) => Show (Phase2 a) where
+  show hall@(Phase2 winDoor isWinning isNext) =
+    "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ".\nIt has been revealed to be a goat."
 
 -- given two lists, find the only member of the second not
 -- occuring in the first
