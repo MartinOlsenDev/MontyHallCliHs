@@ -13,9 +13,14 @@ main = do
   hall <- hallMaker
   runGame hall
 
-data Hall = Hall (Maybe PlayerSelection) (Maybe RevealedSelection) Item Item Item
+-- Plan to use a (+1) | (+2) in (mod 3) to form an infallible model
+-- Also, consider not storing which door is revealed in a data type at all;
+-- instead, consider only ever calculating it on the spot
+data Hall = Hall (Maybe (PlayerSelection, Maybe Int)) WinningDoor
 
 type PlayerSelection = Selection
+
+type WinningDoor = Selection
 
 type RevealedSelection = Selection
 
