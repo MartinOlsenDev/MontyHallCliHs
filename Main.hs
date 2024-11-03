@@ -122,12 +122,6 @@ newFinder a = find (\x -> notElem x a)
 logicalXor :: Bool -> Bool -> Bool
 logicalXor a b = (a || b) && not (a && b)
 
-makeSelection :: Integral a => a -> Maybe DoorId
-makeSelection n
-  | n < 0 = Nothing
-  | n <= 2 = Just $ DoorId $ fromIntegral n
-  | otherwise = Nothing
-
 runGame :: Phase1 -> IO ()
 runGame game = do
   putStrLn $ "You look at the hall.\n" ++ show game ++ "What door do you choose?"
