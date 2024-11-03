@@ -15,17 +15,23 @@ import System.Random (randomRIO)
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  hall <- hallMaker
+  hall <- createPhase1
   runGame hall
+  return ()
 
-data Phase1 doorId = Phase1 doorId
+data Phase1 = Phase1 DoorId
 
-data Phase2 doorId = Phase2 doorId Winning RevealedDoorNext
+data Phase2 = Phase2 DoorId Winning RevealedDoorNext
 
-data Phase3 doorId = Phase3 doorId Winning RevealedDoorNext WasWinning
+data Phase3 = Phase3 DoorId Winning RevealedDoorNext WasWinning
 
 newtype DoorId = DoorId Integer
   deriving (Show, Eq, Integral, Real, Ord, Num, Enum)
+
+makeDoorId :: String -> DoorId
+makeDoorId s = DoorId (read s :: Integer)
+
+-- TODO: Review these types; at least some are from old iterations
 
 type WasWinning = Bool
 
@@ -41,14 +47,14 @@ type WinningDoor = DoorId
 
 type RevealedSelection = DoorId
 
-createPhase1 :: IO (Phase1 DoorId)
+createPhase1 :: IO Phase1
 createPhase1 = do
   randomDoor <- curry randomRIO 0 2
   return $ Phase1 $ DoorId randomDoor
 
--- advance, selectedDoor, and revealedDoor should all be within
+-- selectedDoor and revealedDoor should all be within
 -- one or more typeclasses
-advance1 :: Integral a => Phase1 a -> a -> IO (Phase2 a)
+advance1 :: Phase1 -> DoorId -> IO Phase2
 advance1 (Phase1 winDoor) choice = do
   if winDoor == choice
     then do
@@ -59,38 +65,40 @@ advance1 (Phase1 winDoor) choice = do
           isNext = (winDoor + 1) `mod` 3 == unusedDoor
        in return $ Phase2 winDoor False isNext
 
-advance2 :: Integral a => Phase2 a -> Bool -> Phase3 a
+advance2 :: Phase2 -> Bool -> Phase3
 advance2 hall@(Phase2 winDoor isWinning isNext) switched =
   let nowWinning = logicalXor isWinning switched
    in Phase3 winDoor nowWinning isNext isWinning
 
-revealedDoor :: Integral a => Phase2 a -> a
+-- TODO: refactor this into a class
+revealedDoor :: Phase2 -> DoorId
 revealedDoor (Phase2 winDoor isWinning isNext) =
   fromIntegral $
     if isNext
       then (winDoor + 1) `mod` 3
       else (winDoor + 2) `mod` 3
 
-selectedDoor :: Integral a => Phase2 a -> a
+-- TODO: refactor this into a class
+selectedDoor :: Phase2 -> DoorId
 selectedDoor hall@(Phase2 winDoor isWinning isNext) =
   if isWinning
     then winDoor
     else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
 
-instance Show (Phase1 a) where
+instance Show Phase1 where
   show _ = "The hall has 3 closed doors."
 
-instance (Integral a, Show a) => Show (Phase2 a) where
+instance Show Phase2 where
   show hall =
     "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ".\nIt has been revealed to be a goat."
 
-prevLoc :: Integral a => Phase3 a -> a
+prevLoc :: Phase3 -> DoorId
 prevLoc (Phase3 winLoc isWinning isNext wasWinning) =
   if wasWinning
     then winLoc
-    else selectedDoor (Phase2 winLoc isWinning isNext)
+    else selectedDoor (Phase2 winLoc wasWinning isNext)
 
-instance (Integral a, Show a) => Show (Phase3 a) where
+instance Show Phase3 where
   show hall@(Phase3 winLoc isWinning isNext wasWinning) =
     let madeSwitch = not $ (isWinning && wasWinning) || (not isWinning && not wasWinning)
         currentLoc = if isWinning then winLoc else selectedDoor (Phase2 winLoc isWinning isNext)
@@ -100,7 +108,7 @@ instance (Integral a, Show a) => Show (Phase3 a) where
               else "You stayed at door " ++ show (prevLoc hall)
           )
             ++ ".\n"
-        winRemark = if isWinning then "You won!\n" else "You lost.\n"
+        winRemark = if isWinning then "You won!" else "You lost."
      in switchRemark
           ++ "The winning door is door "
           ++ show winLoc
@@ -120,6 +128,13 @@ makeSelection n
   | n <= 2 = Just $ DoorId $ fromIntegral n
   | otherwise = Nothing
 
-hallMaker = undefined
-
-runGame = undefined
+runGame :: Phase1 -> IO ()
+runGame game = do
+  putStrLn $ "You look at the hall.\n" ++ show game ++ "What door do you choose?"
+  choice <- getLine
+  p2 <- advance1 game ((makeDoorId choice) :: DoorId)
+  putStrLn $ "You look at the hall.\n" ++ show p2 ++ "Do you choose to switch?\ny for yes, anything else for no."
+  switchChoice <- getLine
+  let stageOutcome = advance2 p2 (switchChoice == "y")
+  putStrLn $ show stageOutcome
+  return ()
