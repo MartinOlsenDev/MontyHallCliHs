@@ -22,12 +22,16 @@ data Phase1 doorId = Phase1 doorId
 
 data Phase2 doorId = Phase2 doorId Winning RevealedDoorNext
 
-data Phase3 doorId = Phase3 doorId Winning doorId
+data Phase3 doorId = Phase3 doorId Winning RevealedDoorNext WasWinning
 
 newtype DoorId = DoorId Integer
   deriving (Show, Eq, Integral, Real, Ord, Num, Enum)
 
+type WasWinning = Bool
+
 type Winning = Bool
+
+type MadeSwitch = Bool
 
 type RevealedDoorNext = Bool
 
@@ -42,6 +46,8 @@ createPhase1 = do
   randomDoor <- curry randomRIO 0 2
   return $ Phase1 $ DoorId randomDoor
 
+-- advance, selectedDoor, and revealedDoor should all be within
+-- one or more typeclasses
 advance1 :: Integral a => Phase1 a -> a -> IO (Phase2 a)
 advance1 (Phase1 winDoor) choice = do
   if winDoor == choice
@@ -56,8 +62,7 @@ advance1 (Phase1 winDoor) choice = do
 advance2 :: Integral a => Phase2 a -> Bool -> Phase3 a
 advance2 hall@(Phase2 winDoor isWinning isNext) switched =
   let nowWinning = logicalXor isWinning switched
-      prevLoc = selectedDoor hall
-   in Phase3 winDoor nowWinning prevLoc
+   in Phase3 winDoor nowWinning isNext isWinning
 
 revealedDoor :: Integral a => Phase2 a -> a
 revealedDoor (Phase2 winDoor isWinning isNext) =
@@ -76,8 +81,30 @@ instance Show (Phase1 a) where
   show _ = "The hall has 3 closed doors."
 
 instance (Integral a, Show a) => Show (Phase2 a) where
-  show hall@(Phase2 winDoor isWinning isNext) =
+  show hall =
     "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ".\nIt has been revealed to be a goat."
+
+prevLoc :: Integral a => Phase3 a -> a
+prevLoc (Phase3 winLoc isWinning isNext wasWinning) =
+  if wasWinning
+    then winLoc
+    else selectedDoor (Phase2 winLoc isWinning isNext)
+
+instance (Integral a, Show a) => Show (Phase3 a) where
+  show hall@(Phase3 winLoc isWinning isNext wasWinning) =
+    let madeSwitch = not $ (isWinning && wasWinning) || (not isWinning && not wasWinning)
+        currentLoc = if isWinning then winLoc else selectedDoor (Phase2 winLoc isWinning isNext)
+        switchRemark =
+          ( if madeSwitch
+              then "You switched from door " ++ show (prevLoc hall) ++ " to door " ++ show currentLoc
+              else "You stayed at door " ++ show (prevLoc hall)
+          )
+            ++ ".\n"
+        winRemark = if isWinning then "You won!\n" else "You lost.\n"
+     in switchRemark
+          ++ "The winning door is door "
+          ++ show winLoc
+          ++ winRemark
 
 -- given two lists, find the only member of the second not
 -- occuring in the first
