@@ -31,21 +31,13 @@ newtype DoorId = DoorId Integer
 makeDoorId :: String -> DoorId
 makeDoorId s = DoorId (read s :: Integer)
 
--- TODO: Review these types; at least some are from old iterations
-
 type WasWinning = Bool
 
 type Winning = Bool
 
-type MadeSwitch = Bool
-
 type RevealedDoorNext = Bool
 
 type PlayerSelection = DoorId
-
-type WinningDoor = DoorId
-
-type RevealedSelection = DoorId
 
 createPhase1 :: IO Phase1
 createPhase1 = do
@@ -70,38 +62,46 @@ advance2 hall@(Phase2 winDoor isWinning isNext) switched =
   let nowWinning = logicalXor isWinning switched
    in Phase3 winDoor nowWinning isNext isWinning
 
--- TODO: refactor this into a class
-revealedDoor :: Phase2 -> DoorId
-revealedDoor (Phase2 winDoor isWinning isNext) =
-  fromIntegral $
-    if isNext
-      then (winDoor + 1) `mod` 3
-      else (winDoor + 2) `mod` 3
+class SelectedStage a where
+  selectedDoor :: a -> DoorId
+  revealedDoor :: a -> DoorId
 
--- TODO: refactor this into a class
-selectedDoor :: Phase2 -> DoorId
-selectedDoor hall@(Phase2 winDoor isWinning isNext) =
-  if isWinning
-    then winDoor
-    else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
+instance SelectedStage Phase2 where
+  revealedDoor (Phase2 winDoor isWinning isNext) =
+    fromIntegral $
+      if isNext
+        then (winDoor + 1) `mod` 3
+        else (winDoor + 2) `mod` 3
+  selectedDoor hall@(Phase2 winDoor isWinning isNext) =
+    if isWinning
+      then winDoor
+      else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
+
+instance SelectedStage Phase3 where
+  revealedDoor (Phase3 winDoor isWinning isNext _) =
+    fromIntegral $
+      if isNext
+        then (winDoor + 1) `mod` 3
+        else (winDoor + 2) `mod` 3
+  selectedDoor hall@(Phase3 winDoor isWinning isNext _) =
+    if isWinning
+      then winDoor
+      else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
 
 instance Show Phase1 where
   show _ = "The hall has 3 closed doors."
 
 instance Show Phase2 where
   show hall =
-    "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ".\nIt has been revealed to be a goat."
+    "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ". It has been revealed to be a goat."
 
 prevLoc :: Phase3 -> DoorId
-prevLoc (Phase3 winLoc isWinning isNext wasWinning) =
-  if wasWinning
-    then winLoc
-    else selectedDoor (Phase2 winLoc wasWinning isNext)
+prevLoc (Phase3 winLoc _ isNext wasWinning) = selectedDoor (Phase2 winLoc wasWinning isNext)
 
 instance Show Phase3 where
   show hall@(Phase3 winLoc isWinning isNext wasWinning) =
     let madeSwitch = not $ (isWinning && wasWinning) || (not isWinning && not wasWinning)
-        currentLoc = if isWinning then winLoc else selectedDoor (Phase2 winLoc isWinning isNext)
+        currentLoc = if isWinning then winLoc else selectedDoor hall
         switchRemark =
           ( if madeSwitch
               then "You switched from door " ++ show (prevLoc hall) ++ " to door " ++ show currentLoc
@@ -112,6 +112,7 @@ instance Show Phase3 where
      in switchRemark
           ++ "The winning door is door "
           ++ show winLoc
+          ++ ". "
           ++ winRemark
 
 -- given two lists, find the only member of the second not
@@ -124,11 +125,11 @@ logicalXor a b = (a || b) && not (a && b)
 
 runGame :: Phase1 -> IO ()
 runGame game = do
-  putStrLn $ "You look at the hall.\n" ++ show game ++ "What door do you choose?"
+  putStrLn $ "You look at the hall.\n" ++ show game ++ "\nWhat door do you choose?"
   choice <- getLine
   p2 <- advance1 game ((makeDoorId choice) :: DoorId)
-  putStrLn $ "You look at the hall.\n" ++ show p2 ++ "Do you choose to switch?\ny for yes, anything else for no."
+  putStrLn $ "\nYou look at the hall.\n" ++ show p2 ++ "\nDo you choose to switch?\ny for yes, anything else for no."
   switchChoice <- getLine
   let stageOutcome = advance2 p2 (switchChoice == "y")
-  putStrLn $ show stageOutcome
+  putStrLn $ "\n" ++ show stageOutcome
   return ()
