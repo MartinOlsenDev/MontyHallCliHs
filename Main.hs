@@ -19,6 +19,23 @@ main = do
   runGame hall
   return ()
 
+runGame :: Phase1 -> IO ()
+runGame game = do
+  putStrLn $
+    "You look at the hall.\n"
+      ++ show game
+      ++ "\nWhat door do you choose?"
+  choice <- getLine
+  p2 <- advance1 game $ makeDoorId choice
+  putStrLn $
+    "\nYou look at the hall.\n"
+      ++ show p2
+      ++ "\nDo you choose to switch?\ny for yes, anything else for no."
+  switchChoice <- getLine
+  let stageOutcome = advance2 p2 (switchChoice == "y")
+  putStrLn $ "\n" ++ show stageOutcome
+  return ()
+
 data Phase1 = Phase1 DoorId
 
 data Phase2 = Phase2 DoorId Winning RevealedDoorNext
@@ -53,7 +70,7 @@ advance1 (Phase1 winDoor) choice = do
       randomDoor <- curry randomRIO 0 1
       return $ Phase2 winDoor True (randomDoor == (1 :: Int))
     else
-      let unusedDoor = fromJust . newFinder [winDoor, choice] $ enumFromTo 0 2
+      let unusedDoor = fromJust $ newFinder [winDoor, choice] $ enumFromTo 0 2
           isNext = (winDoor + 1) `mod` 3 == unusedDoor
        in return $ Phase2 winDoor False isNext
 
@@ -88,15 +105,15 @@ instance SelectedStage Phase3 where
       then winDoor
       else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
 
+prevLoc :: Phase3 -> DoorId
+prevLoc (Phase3 winLoc _ isNext wasWinning) = selectedDoor (Phase2 winLoc wasWinning isNext)
+
 instance Show Phase1 where
   show _ = "The hall has 3 closed doors."
 
 instance Show Phase2 where
   show hall =
     "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ". It has been revealed to be a goat."
-
-prevLoc :: Phase3 -> DoorId
-prevLoc (Phase3 winLoc _ isNext wasWinning) = selectedDoor (Phase2 winLoc wasWinning isNext)
 
 instance Show Phase3 where
   show hall@(Phase3 winLoc isWinning isNext wasWinning) =
@@ -122,14 +139,3 @@ newFinder a = find (\x -> notElem x a)
 
 logicalXor :: Bool -> Bool -> Bool
 logicalXor a b = (a || b) && not (a && b)
-
-runGame :: Phase1 -> IO ()
-runGame game = do
-  putStrLn $ "You look at the hall.\n" ++ show game ++ "\nWhat door do you choose?"
-  choice <- getLine
-  p2 <- advance1 game ((makeDoorId choice) :: DoorId)
-  putStrLn $ "\nYou look at the hall.\n" ++ show p2 ++ "\nDo you choose to switch?\ny for yes, anything else for no."
-  switchChoice <- getLine
-  let stageOutcome = advance2 p2 (switchChoice == "y")
-  putStrLn $ "\n" ++ show stageOutcome
-  return ()
