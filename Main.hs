@@ -11,6 +11,7 @@ import System.IO
     stdout,
   )
 import System.Random (randomRIO)
+import Text.Read (readMaybe)
 
 main :: IO ()
 main = do
@@ -24,9 +25,9 @@ runGame game = do
   putStrLn $
     "You look at the hall.\n"
       ++ show game
-      ++ "\nWhat door do you choose?"
-  choice <- getLine
-  p2 <- advance1 game $ makeDoorId choice
+      ++ "\n"
+  selectedDoorId <- phase1Choice
+  p2 <- advance1 game selectedDoorId
   putStrLn $
     "\nYou look at the hall.\n"
       ++ show p2
@@ -45,8 +46,30 @@ data Phase3 = Phase3 DoorId Winning RevealedDoorNext WasWinning
 newtype DoorId = DoorId Integer
   deriving (Show, Eq, Integral, Real, Ord, Num, Enum)
 
-makeDoorId :: String -> DoorId
-makeDoorId s = DoorId (read s :: Integer)
+-- Replace this with a monadic untilM-like
+-- implementation at some point
+phase1Choice :: IO DoorId
+phase1Choice =
+  let validInt :: Integer -> Bool
+      validInt = flip elem [0, 1, 2]
+
+      phase1Choice' :: Maybe Integer -> IO Integer
+      phase1Choice' (Just x) =
+        if validInt x
+          then return x
+          else phase1Choice' Nothing
+      phase1Choice' Nothing =
+        do
+          putStrLn "That was not a valid door ID. Choose 0, 1, or 2."
+          choice' <- getLine
+          let doorChoiceMaybe' = readMaybe choice' :: Maybe Integer
+          phase1Choice' doorChoiceMaybe'
+   in do
+        putStrLn "What door do you choose?"
+        choice <- getLine
+        let doorChoiceMaybe = readMaybe choice :: Maybe Integer
+        properDoorId <- phase1Choice' doorChoiceMaybe
+        return $ DoorId properDoorId
 
 type WasWinning = Bool
 
