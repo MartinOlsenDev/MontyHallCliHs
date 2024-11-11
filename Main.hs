@@ -88,8 +88,6 @@ createPhase1 = do
   randomDoor <- curry randomRIO 0 2
   return $ Phase1 $ DoorId randomDoor
 
--- selectedDoor and revealedDoor should all be within
--- one or more typeclasses
 advance1 :: Phase1 -> DoorId -> IO Phase2
 advance1 (Phase1 winDoor) choice = do
   if winDoor == choice
@@ -173,7 +171,7 @@ instance Show Phase3 where
             winRemark
           ]
 
--- given two lists, find the only member of the second not
+-- given two lists, find first member of the second not
 -- occuring in the first
 newFinder :: Eq a => [a] -> [a] -> Maybe a
 newFinder a = find (\x -> notElem x a)
