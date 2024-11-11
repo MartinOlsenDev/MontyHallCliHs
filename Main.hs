@@ -23,18 +23,22 @@ main = do
 runGame :: Phase1 -> IO ()
 runGame game = do
   putStrLn $
-    "You look at the hall.\n"
-      ++ show game
-      ++ "\n"
+    concat
+      [ "You look at the hall.\n",
+        show game,
+        "\n"
+      ]
   selectedDoorId <- phase1Choice
   p2 <- advance1 game selectedDoorId
   putStrLn $
-    "\nYou look at the hall.\n"
-      ++ show p2
-      ++ "\nDo you choose to switch?\ny for yes, anything else for no."
+    concat
+      [ "\nYou look at the hall.\n",
+        show p2,
+        "\nDo you choose to switch?\ny for yes, anything else for no."
+      ]
   switchChoice <- getLine
   let stageOutcome = advance2 p2 (switchChoice == "y")
-  putStrLn $ "\n" ++ show stageOutcome
+  putStrLn $ concat ["\n", show stageOutcome]
   return ()
 
 data Phase1 = Phase1 DoorId
@@ -136,7 +140,13 @@ instance Show Phase1 where
 
 instance Show Phase2 where
   show hall =
-    "You have selected door " ++ show (selectedDoor hall) ++ ".\nThe revealed door is " ++ show (revealedDoor hall) ++ ". It has been revealed to be a goat."
+    concat
+      [ "You have selected door ",
+        show (selectedDoor hall),
+        ".\nThe revealed door is ",
+        show (revealedDoor hall),
+        ". It has been revealed to be a goat."
+      ]
 
 instance Show Phase3 where
   show hall@(Phase3 winLoc isWinning isNext wasWinning) =
@@ -144,16 +154,24 @@ instance Show Phase3 where
         currentLoc = if isWinning then winLoc else selectedDoor hall
         switchRemark =
           ( if madeSwitch
-              then "You switched from door " ++ show (prevLoc hall) ++ " to door " ++ show currentLoc
-              else "You stayed at door " ++ show (prevLoc hall)
+              then
+                concat
+                  [ "You switched from door ",
+                    show (prevLoc hall),
+                    " to door ",
+                    show currentLoc
+                  ]
+              else concat ["You stayed at door ", show (prevLoc hall)]
           )
             ++ ".\n"
         winRemark = if isWinning then "You won!" else "You lost."
-     in switchRemark
-          ++ "The winning door is door "
-          ++ show winLoc
-          ++ ". "
-          ++ winRemark
+     in concat
+          [ switchRemark,
+            "The winning door is door ",
+            show winLoc,
+            ". ",
+            winRemark
+          ]
 
 -- given two lists, find the only member of the second not
 -- occuring in the first
