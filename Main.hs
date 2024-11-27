@@ -16,29 +16,20 @@ import Text.Read (readMaybe)
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  hall <- createPhase1
-  runGame hall
+  createPhase1 >>= runGame
   return ()
 
 runGame :: Phase1 -> IO ()
 runGame game = do
-  putStrLn $
-    concat
-      [ "You look at the hall.\n",
-        show game,
-        "\n"
-      ]
-  selectedDoorId <- phase1Choice
-  p2 <- advance1 game selectedDoorId
+  p2 <- putStrLn (concat ["You look at the hall.\n", show game, "\n"]) >> phase1Choice >>= advance1 game
   putStrLn $
     concat
       [ "\nYou look at the hall.\n",
         show p2,
         "\nDo you choose to switch?\ny for yes, anything else for no."
       ]
-  switchChoice <- getLine
-  let stageOutcome = advance2 p2 (switchChoice == "y")
-  putStrLn $ concat ["\n", show stageOutcome]
+  outcome <- fmap show $ advance2 p2 . (== "y") <$> getLine
+  putStrLn $ "\n" ++ outcome
   return ()
 
 data Phase1 = Phase1 DoorId
