@@ -2,7 +2,6 @@
 
 module Main (main) where
 
-import Control.Monad (forever, when)
 import Data.List (find)
 import Data.Maybe
 import System.IO
@@ -17,7 +16,6 @@ main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
   createPhase1 >>= runGame
-  return ()
 
 runGame :: Phase1 -> IO ()
 runGame game = do
@@ -111,12 +109,12 @@ instance SelectedStage Phase2 where
       else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
 
 instance SelectedStage Phase3 where
-  revealedDoor (Phase3 winDoor isWinning isNext _) =
+  revealedDoor (Phase3 winDoor _ isNext _) =
     fromIntegral $
       if isNext
         then (winDoor + 1) `mod` 3
         else (winDoor + 2) `mod` 3
-  selectedDoor hall@(Phase3 winDoor isWinning isNext _) =
+  selectedDoor hall@(Phase3 winDoor isWinning _ _) =
     if isWinning
       then winDoor
       else fromJust $ newFinder [winDoor, revealedDoor hall] $ enumFromTo 0 2
@@ -150,7 +148,7 @@ instance Show Phase3 where
                     " to door ",
                     show currentLoc
                   ]
-              else concat ["You stayed at door ", show (prevLoc hall)]
+              else "You stayed at door " ++ show (prevLoc hall)
           )
             ++ ".\n"
         winRemark = if isWinning then "You won!" else "You lost."
