@@ -19,15 +19,21 @@ main =
     >>= runGame
 
 runGame :: Phase1 -> IO ()
-runGame game = do
-  p2 <- putStrLn (concat ["You look at the hall.\n", show game, "\n"]) >> phase1Choice >>= advance1 game
-  putStrLn $
-    concat
-      [ "\nYou look at the hall.\n",
-        show p2,
-        "\nDo you choose to switch?\ny for yes, anything else for no."
-      ]
-  getLine >>= (putStrLn . ("\n" ++) . show) . advance2 p2 . (== "y")
+runGame game =
+  putStrLn (concat ["You look at the hall.\n", show game, "\n"])
+    >> phase1Choice
+    >>= advance1 game
+    >>= ( \phase2 ->
+            putStrLn
+              ( concat
+                  [ "\nYou look at the hall.\n",
+                    show phase2,
+                    "\nDo you choose to switch?\ny for yes, anything else for no."
+                  ]
+              )
+              >> getLine
+              >>= (putStrLn . ("\n" ++) . show) . advance2 phase2 . (== "y")
+        )
 
 type WasWinning = Bool
 
