@@ -13,9 +13,10 @@ import System.Random (randomRIO)
 import Text.Read (readMaybe)
 
 main :: IO ()
-main = do
+main =
   hSetBuffering stdout NoBuffering
-  createPhase1 >>= runGame
+    >> createPhase1
+    >>= runGame
 
 runGame :: Phase1 -> IO ()
 runGame game = do
@@ -26,9 +27,15 @@ runGame game = do
         show p2,
         "\nDo you choose to switch?\ny for yes, anything else for no."
       ]
-  outcome <- fmap show $ advance2 p2 . (== "y") <$> getLine
-  putStrLn $ "\n" ++ outcome
-  return ()
+  getLine >>= (putStrLn . ("\n" ++) . show) . advance2 p2 . (== "y")
+
+type WasWinning = Bool
+
+type Winning = Bool
+
+type RevealedDoorNext = Bool
+
+type PlayerSelection = DoorId
 
 data Phase1 = Phase1 DoorId
 
@@ -51,38 +58,16 @@ phase1Choice =
         if validInt x
           then return x
           else phase1Choice' Nothing
-      phase1Choice' Nothing =
-        do
-          putStrLn "That was not a valid door ID. Choose 0, 1, or 2."
-          choice' <- getLine
-          let doorChoiceMaybe' = readMaybe choice' :: Maybe Integer
-          phase1Choice' doorChoiceMaybe'
-   in do
-        putStrLn "What door do you choose?"
-        choice <- getLine
-        let doorChoiceMaybe = readMaybe choice :: Maybe Integer
-        properDoorId <- phase1Choice' doorChoiceMaybe
-        return $ DoorId properDoorId
-
-type WasWinning = Bool
-
-type Winning = Bool
-
-type RevealedDoorNext = Bool
-
-type PlayerSelection = DoorId
+      phase1Choice' Nothing = putStrLn "That was not a valid door ID. Choose 0, 1, or 2." >> readMaybe <$> getLine >>= phase1Choice'
+   in putStrLn "What door do you choose?" >> DoorId <$> (getLine >>= phase1Choice' . readMaybe)
 
 createPhase1 :: IO Phase1
-createPhase1 = do
-  randomDoor <- curry randomRIO 0 2
-  return $ Phase1 $ DoorId randomDoor
+createPhase1 = Phase1 . DoorId <$> randomRIO (0, 2)
 
 advance1 :: Phase1 -> DoorId -> IO Phase2
-advance1 (Phase1 winDoor) choice = do
+advance1 (Phase1 winDoor) choice =
   if winDoor == choice
-    then do
-      randomDoor <- curry randomRIO 0 1
-      return $ Phase2 winDoor True (randomDoor == (1 :: Int))
+    then Phase2 winDoor True <$> ((== (1 :: Int)) <$> randomRIO (0, 1))
     else
       let unusedDoor = fromJust $ newFinder [winDoor, choice] $ enumFromTo 0 2
           isNext = (winDoor + 1) `mod` 3 == unusedDoor
