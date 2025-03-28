@@ -148,7 +148,7 @@ instance Show Phase3 where
 -- given two lists, find first member of the second not
 -- occuring in the first
 newFinder :: Eq a => [a] -> [a] -> Maybe a
-newFinder a = find (\x -> notElem x a)
+newFinder = find . flip notElem
 
 logicalXor :: Bool -> Bool -> Bool
 logicalXor a b = (a || b) && not (a && b)
