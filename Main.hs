@@ -19,21 +19,15 @@ main =
     >>= runGame
 
 runGame :: Phase1 -> IO ()
-runGame game =
+runGame game = do
   putStrLn (concat ["You look at the hall.\n", show game, "\n"])
-    >> phase1Choice
-    >>= advance1 game
-    >>= ( \phase2 ->
-            putStrLn
-              ( concat
-                  [ "\nYou look at the hall.\n",
-                    show phase2,
-                    "\nDo you choose to switch?\ny for yes, anything else for no."
-                  ]
-              )
-              >> getLine
-              >>= (putStrLn . ("\n" ++) . show) . advance2 phase2 . (== "y")
-        )
+  choice <- phase1Choice
+  part2 <- advance1 game choice
+  putStr $ concat ["\nYou look at the hall.\n",
+                    show part2,
+                    "\nDo you choose to switch?\ny for yes, anything else for no.\n> "]
+  response <- getLine
+  (putStrLn . ("\n" ++) . show) $ advance2 part2 $ (response == "y")
 
 type WasWinning = Bool
 
@@ -65,7 +59,7 @@ phase1Choice =
           then return x
           else phase1Choice' Nothing
       phase1Choice' Nothing = putStrLn "That was not a valid door ID. Choose 0, 1, or 2." >> readMaybe <$> getLine >>= phase1Choice'
-   in putStrLn "What door do you choose?" >> DoorId <$> (getLine >>= phase1Choice' . readMaybe)
+   in putStr "What door do you choose?\n> " >> DoorId <$> (getLine >>= phase1Choice' . readMaybe)
 
 createPhase1 :: IO Phase1
 createPhase1 = Phase1 . DoorId <$> randomRIO (0, 2)
